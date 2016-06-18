@@ -33,7 +33,6 @@ end
 #= TODO
 - make a function to call backprop on entire Stack
     - should set outcome.adj = 1. and call backprop on every element
-- function to clear a stack (pop until empty)
 - separate stack for every function?
     - would be created in a call to rdiff and closed over
     - RDiff variables need a pointer to this, so that functions know what
