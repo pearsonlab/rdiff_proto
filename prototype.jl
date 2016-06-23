@@ -4,13 +4,16 @@ import Base: convert, promote_rule, +, -, *, /, >, <, log
 type RDiff <: Real
     val::Float64
     adj::Float64
+    stack::Nullable{Stack}
     backprop::Function
 
-    RDiff(val, adj, backprop) = new(val, adj, backprop)
-    RDiff(val, adj) = new(val, adj)
+    RDiff(val, adj, stack, backprop) = new(val, adj, stack, backprop)
+    RDiff(val, adj, stack) = new(val, adj, stack)
 end
 typealias Converts Union{Float64, Int, Irrational, Rational}
-RDiff(x::Converts) = RDiff(x, 0.)
+RDiff(x::Converts) = RDiff(x, 0., Nullable{Stack}())
+RDiff(x::Converts, s::Stack) = RDiff(x, 0., Nullable(s))
+RDiff(x::Converts, s::Nullable{Stack}) = RDiff(x, 0., s)
 
 convert(::Type{RDiff}, x::Converts) = RDiff(x)
 promote_rule(::Type{Bool}, ::Type{RDiff}) = RDiff
@@ -22,8 +25,25 @@ adjoint(x::RDiff) = x.adj
 >(x::RDiff, y::RDiff) = x.val > y.val
 <(x::RDiff, y::RDiff) = x.val < y.val
 
-global varstack = Stack(RDiff)
-function clear(s::Stack)
+function grad(f)
+    const varstack = Stack(RDiff)
+
+    function ∇f(x)
+        y = map(x -> RDiff(x, 0., varstack), x)
+        f(y)
+        top(varstack).adj = 1.
+        for v in varstack
+            v.backprop()
+        end
+        clear!(varstack)
+        map(value, y)
+    end
+
+    return ∇f
+
+end
+
+function clear!(s::Stack)
     while !isempty(s)
         pop!(s)
     end
@@ -43,15 +63,18 @@ end
 
 macro diff_rule(sig, code)
     fn = _fn_of_vals(sig)
+    argsyms = Symbol[s.args[1] for s in sig.args[2:end]]
+
     ex = quote
         function $(sig.args[1])($(sig.args[2:end]...))
-            this = RDiff($fn, 0.0)
+            vstack = get_stack($(argsyms...))
+            this = RDiff($fn, 0.0, vstack)
             function backprop()
                 $code
                 nothing
             end
             this.backprop = backprop
-            push!(varstack, this)
+            push!(vstack, this)
             this
         end
     end
@@ -71,6 +94,10 @@ function _fn_of_vals(ex::Expr)
     out
 end
 
+function get_stack(vars...)
+    has_stack = filter(x -> !isnull(x.stack), vars)
+    get(first(has_stack).stack)
+end
 
 @diff_rule log(x::RDiff) begin
     x.adj += this.adj / x.val
