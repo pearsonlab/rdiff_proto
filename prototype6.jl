@@ -129,3 +129,13 @@ end
 @diff_rule -(x::RDiff) begin
     x.adj += -res.adj
 end
+
+@diff_rule *(x::Array{RDiff}, y::Array{RDiff}) begin
+    incadjoint!(x, adjoint(res) * value(y)')
+    incadjoint!(y, value(x)' * adjoint(res))
+end
+
+@diff_rule +(x::Array{RDiff}, y::Array{RDiff}) begin
+    incadjoint!(x, adjoint(res))
+    incadjoint!(y, adjoint(res))
+end
