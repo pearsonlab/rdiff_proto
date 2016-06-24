@@ -35,7 +35,7 @@ type RNode{F<:Function, T1<:Tuple, T2}
     outputs::T2
 end
 
-global varstack = Stack(RNode)
+const global varstack = Stack(RNode)
 
 function grad(f, N)
     y = Array{RDiff}(N)
@@ -139,3 +139,9 @@ end
     incadjoint!(x, adjoint(res))
     incadjoint!(y, adjoint(res))
 end
+
+#= TODO
+@diff_rule map(f::Function, x::Array{RDiff}) begin
+    incadjoint!(x, adjoint(res) .* grad_expr(f)(x))
+end
+=#
