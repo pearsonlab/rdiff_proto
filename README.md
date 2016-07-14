@@ -1,5 +1,11 @@
 # Rdiff_proto
 
+## Important:
+
+Work for this is now in much better shape at: https://github.com/jrevels/ReverseDiffPrototype.jl
+
+## But if you're curious...
+
 This is code used by [@jmxpearson](https://github.com/jmxpearson) in his talk at JuliaCon 2016 to illustrate how reverse mode automatic differentiation could be possible using specialized types.
 
 These implementations are inspired by the [Stan math library](https://github.com/stan-dev/math) as detailed in [this paper](http://arxiv.org/abs/1509.07164). These also require 0.5-dev, since some prototypes rely on each function having its own type.
